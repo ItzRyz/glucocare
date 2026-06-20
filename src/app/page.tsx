@@ -1,15 +1,17 @@
-import WelcomeBanner from "@/components/dashboard/welcome-banner"
-import StatCards from "@/components/dashboard/stat-cards"
-import RecommendedActions from "@/components/dashboard/recommended-actions"
-import BloodSugarChart from "@/components/dashboard/blood-sugar-chart"
+import { LandingContact } from "@/components/landing/contact";
+import { LandingFeatures } from "@/components/landing/features";
+import { LandingFooter } from "@/components/landing/footer";
+import { LandingHero } from "@/components/landing/hero";
+import { LandingNavbar } from "@/components/landing/navbar";
 
 export default function Home() {
-  return (
-    <div className="container mx-auto px-4 sm:px-8 py-8 space-y-8">
-      <WelcomeBanner />
-      <StatCards />
-      <BloodSugarChart />
-      <RecommendedActions />
-    </div>
-  )
+    return (
+        <main className="bg-background">
+            <LandingNavbar />
+            <LandingHero />
+            <LandingFeatures />
+            <LandingContact />
+            <LandingFooter />
+        </main>
+    );
 }
