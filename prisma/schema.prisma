@@ -1,0 +1,256 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id        String   @id
+  email     String   @unique
+  name      String?
+  avatarUrl String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  roleId String
+  role   Role   @relation(fields: [roleId], references: [id])
+
+  patientChats ChatRoom[] @relation("PatientRooms")
+  doctorChats  ChatRoom[] @relation("DoctorRooms")
+  messages     Message[]
+
+  glucoseRecords        GlucoseRecord[]
+  patientMedicalRecords MedicalRecord[] @relation("PatientRecords")
+  doctorMedicalRecords  MedicalRecord[] @relation("DoctorRecords")
+  allergies             Allergy[]
+}
+
+model Role {
+  id   String @id @default(cuid())
+  name String @unique
+
+  clerkRoleSlug String @unique
+
+  description String?
+  users       User[]       @relation
+  menuAccess  MenuAccess[] @relation
+}
+
+model Menu {
+  id       String       @id @default(cuid())
+  name     String
+  path     String       @unique
+  icon     String?
+  parentId String?
+  parent   Menu?        @relation("MenuHierarchy", fields: [parentId], references: [id], onDelete: Cascade)
+  children Menu[]       @relation("MenuHierarchy")
+  roles    MenuAccess[]
+}
+
+model MenuAccess {
+  id        String  @id @default(cuid())
+  roleId    String
+  menuId    String
+  canCreate Boolean @default(false)
+  canRead   Boolean @default(true)
+  canUpdate Boolean @default(false)
+  canDelete Boolean @default(false)
+
+  role Role @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  menu Menu @relation(fields: [menuId], references: [id], onDelete: Cascade)
+
+  @@unique([roleId, menuId])
+}
+
+model Status {
+  id          String  @id @default(cuid())
+  name        String  @unique
+  module      String
+  description String?
+
+  chatRooms      ChatRoom[]
+  medicalRecords MedicalRecord[]
+}
+
+model Type {
+  id          String  @id @default(cuid())
+  name        String  @unique
+  module      String
+  description String?
+
+  messages       Message[]
+  glucoseRecords GlucoseRecord[]
+}
+
+model Category {
+  id          String  @id @default(cuid())
+  name        String  @unique
+  slug        String  @unique
+  description String?
+
+  glucoseRecords GlucoseRecord[]
+  labResults     LabResult[]
+  allergies      Allergy[]
+}
+
+model ChatRoom {
+  id        String   @id @default(cuid())
+  patientId String
+  doctorId  String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  statusId String
+  status   Status @relation(fields: [statusId], references: [id])
+
+  patient  User      @relation("PatientRooms", fields: [patientId], references: [id])
+  doctor   User      @relation("DoctorRooms", fields: [doctorId], references: [id])
+  messages Message[]
+
+  medicalRecord MedicalRecord?
+
+  @@index([patientId])
+  @@index([doctorId])
+}
+
+model Message {
+  id        String   @id @default(cuid())
+  roomId    String
+  senderId  String
+  content   String   @db.Text
+  isRead    Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  typeId String
+  type   Type   @relation(fields: [typeId], references: [id])
+
+  room   ChatRoom @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  sender User     @relation(fields: [senderId], references: [id])
+
+  @@index([roomId])
+}
+
+model GlucoseRecord {
+  id        String   @id @default(cuid())
+  userId    String
+  level     Float
+  notes     String?
+  createdAt DateTime @default(now())
+
+  typeId String
+  type   Type   @relation(fields: [typeId], references: [id])
+
+  categoryId String
+  category   Category @relation(fields: [categoryId], references: [id])
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model MedicalRecord {
+  id         String  @id @default(cuid())
+  patientId  String
+  doctorId   String
+  chatRoomId String? @unique
+
+  subjective String @db.Text
+  objective  String @db.Text
+  assessment String @db.Text
+  plan       String @db.Text
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  statusId  String
+  status    Status   @relation(fields: [statusId], references: [id])
+
+  patient  User      @relation("PatientRecords", fields: [patientId], references: [id])
+  doctor   User      @relation("DoctorRecords", fields: [doctorId], references: [id])
+  chatRoom ChatRoom? @relation(fields: [chatRoomId], references: [id])
+
+  diagnoses     MedicalDiagnosis[]
+  prescriptions Prescription[]
+  vitalSigns    VitalSign?
+  labResults    LabResult[]
+}
+
+model MedicalDiagnosis {
+  id              String  @id @default(cuid())
+  medicalRecordId String
+  code            String
+  name            String
+  notes           String? @db.Text
+
+  medicalRecord MedicalRecord @relation(fields: [medicalRecordId], references: [id], onDelete: Cascade)
+
+  @@index([medicalRecordId])
+}
+
+model VitalSign {
+  id              String  @id @default(cuid())
+  medicalRecordId String  @unique
+  bloodPressure   String?
+  heartRate       Int?
+  respiratoryRate Int?
+  temperature     Float?
+  weight          Float?
+  height          Float?
+  bmi             Float?
+
+  medicalRecord MedicalRecord @relation(fields: [medicalRecordId], references: [id], onDelete: Cascade)
+}
+
+model LabResult {
+  id              String  @id @default(cuid())
+  medicalRecordId String
+  testName        String
+  value           Float
+  unit            String
+  referenceRange  String?
+  notes           String?
+
+  categoryId String
+  category   Category @relation(fields: [categoryId], references: [id])
+
+  medicalRecord MedicalRecord @relation(fields: [medicalRecordId], references: [id], onDelete: Cascade)
+
+  @@index([medicalRecordId])
+}
+
+model Allergy {
+  id        String   @id @default(cuid())
+  patientId String
+  allergen  String
+  reaction  String?
+  createdAt DateTime @default(now())
+
+  categoryId String
+  category   Category @relation(fields: [categoryId], references: [id])
+
+  patient User @relation(fields: [patientId], references: [id], onDelete: Cascade)
+
+  @@index([patientId])
+}
+
+model Prescription {
+  id              String   @id @default(cuid())
+  medicalRecordId String
+  createdAt       DateTime @default(now())
+
+  items         PrescriptionItem[]
+  medicalRecord MedicalRecord      @relation(fields: [medicalRecordId], references: [id], onDelete: Cascade)
+}
+
+model PrescriptionItem {
+  id             String @id @default(cuid())
+  prescriptionId String
+  drugName       String
+  dosage         String
+  instruction    String
+  quantity       Int
+
+  prescription Prescription @relation(fields: [prescriptionId], references: [id], onDelete: Cascade)
+
+  @@index([prescriptionId])
+}

@@ -1,0 +1,19 @@
+{
+    "version": 2,
+    "builds": [
+        {
+            "src": "api/auth.py",
+            "use": "@vercel/python"
+        },
+        {
+            "src": "api/user.py",
+            "use": "@vercel/python"
+        }
+    ],
+    "routes": [
+        {
+            "source": "/flask/auth/(.*)",
+            "destination": "/api/auth.py"
+        }
+    ]
+}
