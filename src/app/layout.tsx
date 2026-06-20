@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import { Montserrat } from "next/font/google";
 import "./globals.css";
 import { cn } from "@/lib/utils";
-import Navbar from "@/components/layout/nav-bar";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { ClerkProvider } from "@clerk/nextjs";
 
@@ -26,7 +25,7 @@ export default function RootLayout({
       lang="en"
       className={cn("h-full", "antialiased", montserrat.variable)}
     >
-      <ClerkProvider>
+      <ClerkProvider afterSignOutUrl="/">
         <body className={cn(montserrat.className, "min-h-full flex flex-col bg-background text-foreground")}>
           <TooltipProvider>{children}</TooltipProvider>
         </body>
