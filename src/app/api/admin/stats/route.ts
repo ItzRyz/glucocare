@@ -3,7 +3,7 @@ import { sendSuccess, sendError } from '@/lib/api-response';
 import { getOrgPermissions } from '@/lib/rbac';
 import { getFlaskBaseUrl } from '@/lib/flask-url';
 
-export async function GET() {
+export async function GET(request: Request) {
     try {
         const { orgRole } = await getOrgPermissions();
         if (!orgRole) return sendError('Unauthorized', 401, 'UNAUTHORIZED');
@@ -37,8 +37,17 @@ export async function GET() {
 
         let mlService: { status: string; service?: string } = { status: 'unavailable' };
         try {
+            const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+            const cookieHeader = request.headers.get('cookie');
+            if (cookieHeader) headers['Cookie'] = cookieHeader;
+            if (process.env.VERCEL_AUTOMATION_BYPASS_SECRET) {
+                headers['x-vercel-protection-bypass'] = process.env.VERCEL_AUTOMATION_BYPASS_SECRET;
+            }
+
             const res = await fetch(`${getFlaskBaseUrl()}/health`, {
-                next: { revalidate: 0 },
+                method: 'GET',
+                headers,
+                signal: AbortSignal.timeout(2000),
             });
             if (res.ok) {
                 mlService = await res.json();

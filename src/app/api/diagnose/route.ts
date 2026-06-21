@@ -1,9 +1,9 @@
 import prisma from '@/lib/prisma';
 import { sendSuccess, sendError } from '@/lib/api-response';
 import { getOrgPermissions } from '@/lib/rbac';
-import { getFlaskBaseUrl } from '@/lib/flask-url';
-const VALID_MODELS = ['randomforest', 'logisticregression'] as const;
+import { predict } from '@/lib/ml-model';
 
+const VALID_MODELS = ['randomforest', 'logisticregression'] as const;
 type ModelName = (typeof VALID_MODELS)[number];
 
 export async function GET(request: Request) {
@@ -50,23 +50,8 @@ export async function POST(request: Request) {
             );
         }
 
-        const endpoint = `${getFlaskBaseUrl()}/${model}`;
-        const flaskResponse = await fetch(endpoint, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(features),
-        });
-
-        const result = await flaskResponse.json();
-
-        if (!flaskResponse.ok) {
-            return sendError(
-                result.message ?? 'Prediction service error',
-                flaskResponse.status,
-                'PREDICTION_ERROR',
-                result
-            );
-        }
+        // Call the ML model directly — no HTTP roundtrip needed
+        const result = predict(model as ModelName, features);
 
         let saved = null;
         if (save) {
@@ -89,9 +74,9 @@ export async function POST(request: Request) {
     } catch (error) {
         console.error(error);
         return sendError(
-            'Prediction service unavailable. Ensure the Flask server is running.',
-            503,
-            'SERVICE_UNAVAILABLE'
+            'Prediction failed. Please try again.',
+            500,
+            'PREDICTION_ERROR'
         );
     }
 }
