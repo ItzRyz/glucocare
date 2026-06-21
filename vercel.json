@@ -11,5 +11,19 @@
       "maxDuration": 30,
       "memory": 1024
     }
-  }
+  },
+  "routes": [
+    {
+      "src": "/api/flask/(.*)",
+      "dest": "/api/flask/$1"
+    },
+    {
+      "src": "/api/(.*)",
+      "dest": "/api/$1"
+    },
+    {
+      "src": "/(.*)",
+      "dest": "/$1"
+    }
+  ]
 }
