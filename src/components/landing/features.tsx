@@ -54,7 +54,7 @@ const features: FeatureProps[] = [
 
 export function LandingFeatures() {
     return (
-        <section className="container mx-auto py-24 sm:py-32 space-y-12">
+        <section className="container mx-auto py-24 sm:py-32 space-y-12" id="features">
             <div className="text-center space-y-4 max-w-2xl mx-auto">
                 <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">
                     Everything you need to live healthier

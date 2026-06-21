@@ -6,21 +6,36 @@ import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Textarea } from "@/components/ui/textarea"
-import { CheckCircle2, ArrowLeft } from "lucide-react"
+import { CheckCircle2, ArrowLeft, Loader2 } from "lucide-react"
 import Link from "next/link"
+import { api, ApiClientError } from "@/lib/api-client"
 
 export default function WeeklyAssessmentForm() {
   const [isSubmitted, setIsSubmitted] = useState(false)
-  
-  // Form State
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
   const [exercise, setExercise] = useState("yes")
   const [diet, setDiet] = useState("yes")
   const [symptoms, setSymptoms] = useState("")
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    // Logic to save the assessment data would go here
-    setIsSubmitted(true)
+    setError(null)
+    setLoading(true)
+
+    try {
+      await api.assessments.create({
+        exercise: exercise === "yes",
+        diet: diet === "yes",
+        symptoms: symptoms.trim() || undefined,
+      })
+      setIsSubmitted(true)
+    } catch (err) {
+      setError(err instanceof ApiClientError ? err.message : "Failed to submit assessment")
+    } finally {
+      setLoading(false)
+    }
   }
 
   if (isSubmitted) {
@@ -30,9 +45,9 @@ export default function WeeklyAssessmentForm() {
           <CheckCircle2 className="h-16 w-16 text-green-500" />
           <h2 className="text-2xl font-bold">Assessment Complete!</h2>
           <p className="text-muted-foreground max-w-md">
-            Thank you for keeping your health records updated. Your doctor has been notified and your data is securely logged.
+            Thank you for keeping your health records updated. Your data is securely logged.
           </p>
-          <Link href="/">
+          <Link href="/dashboard">
             <Button variant="default" className="mt-4">
               <ArrowLeft className="mr-2 h-4 w-4" /> Back to Dashboard
             </Button>
@@ -50,7 +65,7 @@ export default function WeeklyAssessmentForm() {
       </CardHeader>
       <form onSubmit={handleSubmit}>
         <CardContent className="space-y-8">
-          
+
           <div className="space-y-4">
             <Label className="text-base font-semibold">1. Did you exercise for at least 150 minutes this week?</Label>
             <RadioGroup value={exercise} onValueChange={setExercise} className="flex gap-4">
@@ -81,7 +96,7 @@ export default function WeeklyAssessmentForm() {
 
           <div className="space-y-4">
             <Label className="text-base font-semibold">3. Have you experienced any unusual symptoms? (Optional)</Label>
-            <Textarea 
+            <Textarea
               placeholder="e.g. Dizziness, unusual fatigue, blurry vision..."
               value={symptoms}
               onChange={(e) => setSymptoms(e.target.value)}
@@ -90,12 +105,20 @@ export default function WeeklyAssessmentForm() {
             />
           </div>
 
+          {error && <p className="text-sm text-destructive">{error}</p>}
+
         </CardContent>
         <CardFooter className="flex justify-between">
-          <Link href="/">
-            <Button variant="ghost">Cancel</Button>
+          <Link href="/dashboard">
+            <Button variant="ghost" type="button">Cancel</Button>
           </Link>
-          <Button type="submit">Submit Assessment</Button>
+          <Button type="submit" disabled={loading}>
+            {loading ? (
+              <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Submitting...</>
+            ) : (
+              "Submit Assessment"
+            )}
+          </Button>
         </CardFooter>
       </form>
     </Card>

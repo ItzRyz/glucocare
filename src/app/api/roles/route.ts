@@ -14,7 +14,15 @@ export async function GET() {
             return sendError("Forbidden", 403, "FORBIDDEN", "User is not an organization administrator");
         }
 
-        const roles = await prisma.role.findMany();
+        const roles = await prisma.role.findMany({
+            include: {
+                _count: { select: { users: true, menuAccess: true } },
+                menuAccess: {
+                    include: { menu: { select: { id: true, name: true, path: true } } },
+                },
+            },
+            orderBy: { name: 'asc' },
+        });
         return sendSuccess(roles, "Successfully retrieved roles", 200);
     } catch (error: Error | unknown) {
         return sendError("Internal Server Error", 500, "SERVER", error instanceof Error ? error.message : "An unknown error occurred");

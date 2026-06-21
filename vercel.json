@@ -1,9 +1,14 @@
 {
-  "version": 2,
+  "functions": {
+    "api/**/*.py": {
+      "maxDuration": 30,
+      "memory": 1024
+    }
+  },
   "rewrites": [
     {
-      "source": "/flask/:path*",
-      "destination": "/flask/app.py"
+      "source": "/api/flask/(.*)",
+      "destination": "/api/index.py"
     }
   ]
 }

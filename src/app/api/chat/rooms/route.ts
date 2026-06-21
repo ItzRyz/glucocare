@@ -6,7 +6,7 @@ const MENU_PATH = '/telemedicine';
 
 export async function GET() {
     try {
-        const { authenticated, orgId, userId, roleName, permissions } = await getOrgPermissions();
+        const { authenticated, orgId, userId, orgRole, permissions } = await getOrgPermissions();
         if (!authenticated || !orgId) return sendError('Unauthorized', 401, 'UNAUTHORIZED');
 
         const access = permissions.find((p) => p.menu.path === MENU_PATH);
@@ -14,7 +14,7 @@ export async function GET() {
             return sendError('Forbidden: Anda tidak memiliki akses Read', 403, 'FORBIDDEN');
         }
 
-        if (roleName === 'ADMIN') {
+        if (orgRole === 'org:admin') {
             const allRooms = await prisma.chatRoom.findMany({
                 include: { patient: true, doctor: true, status: true },
                 orderBy: { updatedAt: 'desc' }
@@ -41,7 +41,7 @@ export async function GET() {
 
 export async function POST(req: Request) {
     try {
-        const { authenticated, orgId, userId, roleName, permissions } = await getOrgPermissions();
+        const { authenticated, orgId, userId, orgRole, permissions } = await getOrgPermissions();
         if (!authenticated || !orgId) return sendError('Unauthorized', 401, 'UNAUTHORIZED');
 
         const access = permissions.find((p) => p.menu.path === MENU_PATH);
@@ -52,14 +52,14 @@ export async function POST(req: Request) {
         const { patientId, doctorId } = await req.json();
 
         const activeStatus = await prisma.status.findFirst({
-            where: { name: 'ACTIVE', module: 'TELEMEDICINE' },
+            where: { name: 'Active', module: 'CHAT' },
         });
 
-        if (!activeStatus) return sendError('Status master ACTIVE belum di-seed', 500, 'SERVER_ERROR');
+        if (!activeStatus) return sendError('Status master Active belum di-seed', 500, 'SERVER_ERROR');
 
         const newRoom = await prisma.chatRoom.create({
             data: {
-                patientId: roleName === 'ADMIN' ? patientId : userId,
+                patientId: orgRole === 'org:admin' ? patientId : userId,
                 doctorId: doctorId,
                 statusId: activeStatus.id,
             },
@@ -70,4 +70,4 @@ export async function POST(req: Request) {
         return sendError('Gagal membuat room chat', 500, 'SERVER_ERROR');
     }
 }
-
+

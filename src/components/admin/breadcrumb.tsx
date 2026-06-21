@@ -15,21 +15,22 @@ import { Card, CardContent } from "../ui/card";
 import { SidebarTrigger } from "../ui/sidebar";
 
 const routeMap: Record<string, string> = {
-    dashboard: "Dashboard",
-    settings: "Settings",
     users: "User Management",
-    "api-keys": "API Keys",
+    roles: "Roles & Permissions",
+    menus: "Menu Configuration",
 };
 
 export function AdminBreadcrumb() {
     const pathname = usePathname();
-    const segments = pathname.split("/admin").pop()?.split("/").filter((segment) => segment !== "") || [];
+    const segments = pathname.split("/admin").pop()?.split("/").filter(Boolean) ?? [];
+
     const formatLabel = (segment: string) => {
         if (routeMap[segment]) return routeMap[segment];
         return segment
             .replace(/[-_]/g, " ")
             .replace(/\b\w/g, (char) => char.toUpperCase());
     };
+
     return (
         <Card className="mb-4 rounded-3xl">
             <CardContent className="flex items-center gap-6">
@@ -38,12 +39,12 @@ export function AdminBreadcrumb() {
                     <BreadcrumbList>
                         <BreadcrumbItem>
                             <BreadcrumbLink asChild>
-                                <Link href="/admin/dashboard">Admin</Link>
+                                <Link href="/admin">Admin</Link>
                             </BreadcrumbLink>
                         </BreadcrumbItem>
 
                         {segments.map((segment, index) => {
-                            const href = `/dashboard/${segments.slice(0, index + 1).join("/")}`;
+                            const href = `/admin/${segments.slice(0, index + 1).join("/")}`;
                             const isLast = index === segments.length - 1;
 
                             return (

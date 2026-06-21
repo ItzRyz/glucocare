@@ -1,20 +1,15 @@
 import type { Metadata } from "next";
-import Navbar from "@/components/layout/navbar";
+import { requirePageAuth, PatientShell } from "@/lib/require-page-auth";
+
 export const metadata: Metadata = {
     title: "Dashboard"
 };
 
-export default function DashboardLayout({
+export default async function DashboardLayout({
     children,
 }: Readonly<{
     children: React.ReactNode;
 }>) {
-    return (
-        <>
-            <Navbar />
-            <main className="flex-1">
-                {children}
-            </main>
-        </>
-    );
+    await requirePageAuth();
+    return <PatientShell>{children}</PatientShell>;
 }

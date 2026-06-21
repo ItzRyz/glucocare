@@ -48,13 +48,14 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
             return sendError("Forbidden", 403, "FORBIDDEN", "User is not an organization administrator");
         }
 
-        if (!email || !password) {
-            return sendError('Email and password must filled', 400, 'BAD_REQUEST');
+        const existingUser = await prisma.user.findUnique({ where: { id } });
+        if (!existingUser) {
+            return sendError('User not found', 404, 'NOT_FOUND');
         }
 
-        const role = await prisma.role.findUnique({
-            where: { clerkRoleSlug: roleSlug }
-        });
+        const role = roleSlug
+            ? await prisma.role.findUnique({ where: { clerkRoleSlug: roleSlug } })
+            : await prisma.role.findUnique({ where: { id: existingUser.roleId } });
 
         if (!role) {
             return sendError('Role not found', 500, 'ROLE_NOT_FOUND');
@@ -68,21 +69,23 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
             if (lastName !== undefined) clerkPayload.lastName = lastName;
             if (email) clerkPayload.emailAddress = [email];
             if (username) clerkPayload.username = username;
+            if (password) clerkPayload.password = password;
 
-            if (Object.keys(clerkPayload).length < 1) {
-                return sendError("Field must be filled", 400, "BAD_REQUEST");
+            if (Object.keys(clerkPayload).length < 1 && !roleSlug) {
+                return sendError("No fields to update", 400, "BAD_REQUEST");
             }
 
-            const updatedClerkUser = await clerk.users.updateUser(id, clerkPayload);
+            const updatedClerkUser = Object.keys(clerkPayload).length > 0
+                ? await clerk.users.updateUser(id, clerkPayload)
+                : await clerk.users.getUser(id);
 
-            const fullName = `${firstName || ''} ${lastName || ''}`.trim();
+            const fullName = `${firstName ?? ''} ${lastName ?? ''}`.trim();
 
             updatedUser = await prisma.user.update({
                 where: { id },
                 data: {
-                    id: updatedClerkUser.id,
-                    email: email,
-                    name: fullName || 'Glucocare User',
+                    email: email ?? existingUser.email,
+                    name: fullName || existingUser.name || 'Glucocare User',
                     avatarUrl: updatedClerkUser.imageUrl,
                     roleId: role.id,
                 },

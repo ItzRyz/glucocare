@@ -82,6 +82,54 @@ export async function POST(req: NextRequest) {
             return sendSuccess(null, 'User updated successfully', 200);
         }
 
+        if (type === 'user.deleted') {
+            const { id } = evt.data;
+            try {
+                await prisma.user.delete({ where: { id } });
+            } catch {
+                // User may not exist in DB yet
+            }
+            return sendSuccess(null, 'User deleted successfully', 200);
+        }
+
+        if (type === 'organizationMembership.created') {
+            const { organization, public_user_data, role } = evt.data;
+            const userId = public_user_data.user_id;
+
+            const dbRole = await prisma.role.findUnique({
+                where: { clerkRoleSlug: role },
+            });
+
+            if (dbRole && organization?.id && userId) {
+                await prisma.organization.upsert({
+                    where: { id: organization.id },
+                    update: { name: organization.name, slug: organization.slug },
+                    create: {
+                        id: organization.id,
+                        name: organization.name,
+                        slug: organization.slug,
+                    },
+                });
+
+                await prisma.organizationMembership.upsert({
+                    where: {
+                        userId_organizationId: {
+                            userId,
+                            organizationId: organization.id,
+                        },
+                    },
+                    update: { roleId: dbRole.id },
+                    create: {
+                        userId,
+                        organizationId: organization.id,
+                        roleId: dbRole.id,
+                    },
+                });
+            }
+
+            return sendSuccess(null, 'Organization membership synced', 200);
+        }
+
         return sendSuccess(null, 'Webhook received and ignored', 200);
     } catch (error: unknown) {
         return sendError(

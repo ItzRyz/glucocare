@@ -1,36 +1,93 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Skeleton } from "@/components/ui/skeleton"
 import { ArrowRight, X } from "lucide-react"
+import { api } from "@/lib/api-client"
 
-const initialActions = [
+type Action = {
+  id: string
+  title: string
+  description: string
+  link: string
+}
+
+const staticActions: Action[] = [
   {
-    id: 1,
-    title: "Complete Weekly Assessment",
-    description: "Keep your doctor updated with your latest health data.",
-    link: "/assessment"
-  },
-  {
-    id: 2,
+    id: "guidelines",
     title: "Review Dietary Guidelines",
     description: "Check the latest meal recommendations from your nutritionist.",
-    link: "/guidelines"
+    link: "/guidelines",
   },
 ]
 
 export default function RecommendedActions() {
-  const [actions, setActions] = useState(initialActions)
+  const [actions, setActions] = useState<Action[]>([])
+  const [loading, setLoading] = useState(true)
   const router = useRouter()
 
-  const dismissAction = (e: React.MouseEvent, id: number) => {
-    e.stopPropagation() // Prevent clicking the card link
+  useEffect(() => {
+    let mounted = true
+
+    async function load() {
+      try {
+        const assessments = await api.assessments.list()
+        if (!mounted) return
+
+        const oneWeekAgo = new Date()
+        oneWeekAgo.setDate(oneWeekAgo.getDate() - 7)
+
+        const hasRecentAssessment = assessments.some(
+          (a) => new Date(a.createdAt) >= oneWeekAgo
+        )
+
+        const next: Action[] = []
+        if (!hasRecentAssessment) {
+          next.push({
+            id: "assessment",
+            title: "Complete Weekly Assessment",
+            description: "Keep your doctor updated with your latest health data.",
+            link: "/assessment",
+          })
+        }
+        next.push(...staticActions)
+        setActions(next)
+      } catch {
+        setActions([
+          {
+            id: "assessment",
+            title: "Complete Weekly Assessment",
+            description: "Keep your doctor updated with your latest health data.",
+            link: "/assessment",
+          },
+          ...staticActions,
+        ])
+      } finally {
+        if (mounted) setLoading(false)
+      }
+    }
+
+    load()
+    return () => { mounted = false }
+  }, [])
+
+  const dismissAction = (e: React.MouseEvent, id: string) => {
+    e.stopPropagation()
     setActions((prev) => prev.filter((action) => action.id !== id))
   }
 
-  const navigateToAction = (link: string) => {
-    router.push(link)
+  if (loading) {
+    return (
+      <div className="pt-4">
+        <Skeleton className="h-6 w-48 mb-4" />
+        <div className="grid gap-4 md:grid-cols-2">
+          <Skeleton className="h-24" />
+          <Skeleton className="h-24" />
+        </div>
+      </div>
+    )
   }
 
   if (actions.length === 0) return null
@@ -40,9 +97,9 @@ export default function RecommendedActions() {
       <h2 className="text-xl font-semibold mb-4">Recommended for You</h2>
       <div className="grid gap-4 md:grid-cols-2">
         {actions.map((action) => (
-          <Card 
-            key={action.id} 
-            onClick={() => navigateToAction(action.link)}
+          <Card
+            key={action.id}
+            onClick={() => router.push(action.link)}
             className="relative hover:bg-muted/50 hover:border-primary/50 transition-all cursor-pointer group"
           >
             <button

@@ -1,22 +1,26 @@
 "use client"
 
 import Link from "next/link"
-import { Menu, User, Activity } from "lucide-react"
+import { Menu, Activity, Shield } from "lucide-react"
+import { useOrganization } from "@clerk/nextjs"
 
 import { buttonVariants } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
 import { UserButton } from "@clerk/nextjs"
 
+const navLinks = [
+  { href: "/dashboard", label: "Dashboard" },
+  { href: "/diagnose", label: "Diagnose" },
+  { href: "/telemedicine", label: "Telemedicine" },
+  { href: "/assessment", label: "Assessment" },
+  { href: "/records/history", label: "Records" },
+]
+
 export default function Navbar() {
+  const { membership } = useOrganization()
+  const isAdmin = membership?.role === "org:admin"
+
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-backdrop-filter:bg-background/60">
       <div className="container flex h-16 items-center mx-auto px-4 sm:px-8">
@@ -28,24 +32,24 @@ export default function Navbar() {
             </span>
           </Link>
           <nav className="flex items-center space-x-6 text-sm font-medium">
-            <Link
-              href="/"
-              className="transition-colors hover:text-foreground/80 text-foreground"
-            >
-              Dashboard
-            </Link>
-            <Link
-              href="/diagnose"
-              className="transition-colors hover:text-foreground/80 text-foreground/60"
-            >
-              Diagnose
-            </Link>
-            <Link
-              href="/telemedicine"
-              className="transition-colors hover:text-foreground/80 text-foreground/60"
-            >
-              Telemedicine
-            </Link>
+            {navLinks.map((link) => (
+              <Link
+                key={link.href}
+                href={link.href}
+                className="transition-colors hover:text-foreground/80 text-foreground/60"
+              >
+                {link.label}
+              </Link>
+            ))}
+            {isAdmin && (
+              <Link
+                href="/admin"
+                className="transition-colors hover:text-foreground/80 text-foreground/60 flex items-center gap-1"
+              >
+                <Shield className="h-3.5 w-3.5" />
+                Admin
+              </Link>
+            )}
           </nav>
         </div>
         <Sheet>
@@ -65,9 +69,15 @@ export default function Navbar() {
                 <span className="font-bold">GlucoCare</span>
               </Link>
               <div className="flex flex-col space-y-4 text-sm font-medium">
-                <Link href="/">Dashboard</Link>
-                <Link href="/diagnose">Diagnose</Link>
-                <Link href="/telemedicine">Telemedicine</Link>
+                {navLinks.map((link) => (
+                  <Link key={link.href} href={link.href}>{link.label}</Link>
+                ))}
+                {isAdmin && (
+                  <Link href="/admin" className="flex items-center gap-2">
+                    <Shield className="h-4 w-4" />
+                    Admin
+                  </Link>
+                )}
               </div>
             </div>
             <UserButton showName appearance={{
@@ -86,18 +96,22 @@ export default function Navbar() {
             }}>
               <UserButton.MenuItems>
                 <UserButton.Link label="Appointments" href="/appointments" labelIcon={<Activity className="mr-2 h-4 w-4" />} />
+                {isAdmin && (
+                  <UserButton.Link label="Admin Panel" href="/admin" labelIcon={<Shield className="mr-2 h-4 w-4" />} />
+                )}
               </UserButton.MenuItems>
             </UserButton>
           </SheetContent>
         </Sheet>
         <div className="flex flex-1 items-center justify-between space-x-2 md:justify-end">
-          <div className="w-full flex-1 md:w-auto md:flex-none">
-            {/* Search or other elements could go here */}
-          </div>
+          <div className="w-full flex-1 md:w-auto md:flex-none" />
           <nav className="flex items-center">
             <UserButton>
               <UserButton.MenuItems>
                 <UserButton.Link label="Appointments" href="/appointments" labelIcon={<Activity className="mr-2 h-4 w-4" />} />
+                {isAdmin && (
+                  <UserButton.Link label="Admin Panel" href="/admin" labelIcon={<Shield className="mr-2 h-4 w-4" />} />
+                )}
               </UserButton.MenuItems>
             </UserButton>
           </nav>

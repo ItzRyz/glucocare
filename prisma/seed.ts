@@ -11,6 +11,9 @@ async function main() {
     await prisma.vitalSign.deleteMany({});
     await prisma.medicalDiagnosis.deleteMany({});
     await prisma.medicalRecord.deleteMany({});
+    await prisma.appointment.deleteMany({});
+    await prisma.diagnosisPrediction.deleteMany({});
+    await prisma.weeklyAssessment.deleteMany({});
     await prisma.message.deleteMany({});
     await prisma.chatRoom.deleteMany({});
     await prisma.allergy.deleteMany({});
@@ -59,6 +62,15 @@ async function main() {
     });
     const recordFinal = await prisma.status.create({
         data: { name: 'Finalized', module: 'MEDICAL_RECORD', description: 'Medical record is signed off' },
+    });
+    const apptScheduled = await prisma.status.create({
+        data: { name: 'Scheduled', module: 'APPOINTMENT', description: 'Appointment is scheduled' },
+    });
+    await prisma.status.create({
+        data: { name: 'Completed', module: 'APPOINTMENT', description: 'Appointment completed' },
+    });
+    await prisma.status.create({
+        data: { name: 'Cancelled', module: 'APPOINTMENT', description: 'Appointment cancelled' },
     });
 
     // --- 4. Seed Types ---
@@ -138,22 +150,80 @@ async function main() {
         },
     });
 
+    const telemedicineMenu = await prisma.menu.create({
+        data: { name: 'Telemedicine', path: '/telemedicine', icon: 'Video' },
+    });
+
+    const adminDashboardMenu = await prisma.menu.create({
+        data: { name: 'Admin Dashboard', path: '/admin', icon: 'LayoutDashboard' },
+    });
+
+    const adminUsersMenu = await prisma.menu.create({
+        data: { name: 'Users', path: '/admin/users', icon: 'Users' },
+    });
+
+    const adminRolesMenu = await prisma.menu.create({
+        data: { name: 'Roles', path: '/admin/roles', icon: 'Shield' },
+    });
+
+    const adminMenusMenu = await prisma.menu.create({
+        data: { name: 'Menus', path: '/admin/menus', icon: 'Menu' },
+    });
+
     // --- 8. Seed Menu Access Controls ---
     console.log('Seeding Menu Access Controls...');
+    const adminMenus = [adminDashboardMenu, adminUsersMenu, adminRolesMenu, adminMenusMenu];
+    for (const menu of adminMenus) {
+        await prisma.menuAccess.create({
+            data: {
+                roleId: adminRole.id,
+                menuId: menu.id,
+                canCreate: true,
+                canRead: true,
+                canUpdate: true,
+                canDelete: true,
+            },
+        });
+    }
     // Admins can manage the Dashboard
     await prisma.menuAccess.create({
         data: { roleId: adminRole.id, menuId: dashboardMenu.id, canCreate: true, canUpdate: true, canDelete: true },
+    });
+    await prisma.menuAccess.create({
+        data: {
+            roleId: adminRole.id,
+            menuId: telemedicineMenu.id,
+            canCreate: true,
+            canRead: true,
+            canUpdate: true,
+            canDelete: true,
+        },
     });
     // Doctors can read Dashboard and edit Medical Records
     await prisma.menuAccess.create({
         data: { roleId: doctorRole.id, menuId: dashboardMenu.id },
     });
     await prisma.menuAccess.create({
-        data: { roleId: doctorRole.id, menuId: medicalRecordsParent.id, canCreate: true, canUpdate: true },
+        data: { roleId: doctorRole.id, menuId: medicalRecordsParent.id, canCreate: true, canUpdate: true, canRead: true },
     });
-    // Patients can only view their history
+    await prisma.menuAccess.create({
+        data: {
+            roleId: doctorRole.id,
+            menuId: telemedicineMenu.id,
+            canCreate: true,
+            canRead: true,
+            canUpdate: true,
+        },
+    });
+    // Patients can view history, dashboard, and telemedicine chat
     await prisma.menuAccess.create({
         data: { roleId: patientRole.id, menuId: myHistorySubMenu.id, canRead: true },
+    });
+    await prisma.menuAccess.create({
+        data: { roleId: patientRole.id, menuId: dashboardMenu.id, canRead: true, canCreate: true },
+    });
+    await prisma.menuAccess.create({
+        data: { roleId: patientRole.id, menuId: telemedicineMenu.id, canCreate: true, canRead: true },
     });
 
     // --- 9. Seed Patient Data (Allergies & Glucose Records) ---
@@ -272,6 +342,28 @@ async function main() {
             dosage: '500mg',
             instruction: 'Take twice daily with meals',
             quantity: 60,
+        },
+    });
+
+    // --- 12. Seed Appointments & Assessments ---
+    console.log('Seeding Appointments & Assessments...');
+    await prisma.appointment.create({
+        data: {
+            patientId: patientUser.id,
+            doctorId: doctorUser.id,
+            date: new Date('2026-06-25'),
+            timeSlot: '10:00 AM',
+            statusId: apptScheduled.id,
+            notes: 'Follow-up glucose review',
+        },
+    });
+
+    await prisma.weeklyAssessment.create({
+        data: {
+            userId: patientUser.id,
+            exercise: true,
+            diet: true,
+            symptoms: 'Mild fatigue in the afternoon',
         },
     });
 

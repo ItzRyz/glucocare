@@ -26,7 +26,11 @@ model User {
   patientMedicalRecords   MedicalRecord[]          @relation("PatientRecords")
   doctorMedicalRecords    MedicalRecord[]          @relation("DoctorRecords")
   allergies               Allergy[]
-  organizationMemberships OrganizationMembership[] @relation
+  organizationMemberships OrganizationMembership[]   @relation
+  diagnosisPredictions    DiagnosisPrediction[]
+  weeklyAssessments       WeeklyAssessment[]
+  patientAppointments     Appointment[]            @relation("PatientAppointments")
+  doctorAppointments      Appointment[]            @relation("DoctorAppointments")
 }
 
 model Role {
@@ -103,6 +107,7 @@ model Status {
 
   chatRooms      ChatRoom[]
   medicalRecords MedicalRecord[]
+  appointments   Appointment[]
 }
 
 model Type {
@@ -283,4 +288,51 @@ model PrescriptionItem {
   prescription Prescription @relation(fields: [prescriptionId], references: [id], onDelete: Cascade)
 
   @@index([prescriptionId])
+}
+
+model DiagnosisPrediction {
+  id          String   @id @default(cuid())
+  userId      String
+  model       String
+  features    Json
+  prediction  String
+  probability String
+  createdAt   DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model WeeklyAssessment {
+  id        String   @id @default(cuid())
+  userId    String
+  exercise  Boolean
+  diet      Boolean
+  symptoms  String?  @db.Text
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model Appointment {
+  id        String   @id @default(cuid())
+  patientId String
+  doctorId  String
+  date      DateTime @db.Date
+  timeSlot  String
+  notes     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  statusId String
+  status   Status @relation(fields: [statusId], references: [id])
+
+  patient User @relation("PatientAppointments", fields: [patientId], references: [id])
+  doctor  User @relation("DoctorAppointments", fields: [doctorId], references: [id])
+
+  @@index([patientId])
+  @@index([doctorId])
 }

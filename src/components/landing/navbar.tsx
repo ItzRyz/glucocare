@@ -3,6 +3,7 @@
 import { SignInButton, SignUpButton, UserButton, useSession } from "@clerk/nextjs";
 import { Activity, Layout, Menu } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { motion, useScroll, useTransform } from "framer-motion";
 import {
     Sheet,
     SheetContent,
@@ -19,10 +20,28 @@ const navLinks = [
 
 export function LandingNavbar() {
     const { isLoaded, isSignedIn } = useSession();
-    return (
-        <nav className="fixed top-5 z-50 w-full">
-            <div className="container mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8 py-2 border border-primary/20 rounded-3xl bg-white/20 backdrop-blur-lg shadow-md">
+    const { scrollY } = useScroll();
+    
+    // Dynamic styling based on scroll position
+    const bgOpacity = useTransform(scrollY, [0, 50], [0.2, 0.8]);
+    const blurValue = useTransform(scrollY, [0, 50], [8, 16]);
+    const yValue = useTransform(scrollY, [0, 50], [20, 10]);
 
+    return (
+        <motion.nav 
+            className="fixed top-0 z-50 w-full px-4 sm:px-6 lg:px-8 flex justify-center"
+            initial={{ y: -100 }}
+            animate={{ y: 0 }}
+            transition={{ type: "spring", stiffness: 100, damping: 20 }}
+            style={{ paddingTop: yValue }}
+        >
+            <motion.div 
+                className="w-full flex h-16 max-w-7xl items-center justify-between px-4 py-2 border border-primary/20 rounded-3xl shadow-md"
+                style={{ 
+                    backgroundColor: useTransform(bgOpacity, o => `rgba(255, 255, 255, ${o})`),
+                    backdropFilter: useTransform(blurValue, b => `blur(${b}px)`)
+                }}
+            >
                 <div className="flex items-center gap-2">
                     <div className="rounded-xl bg-primary p-2 text-white shadow-md shadow-primary/20">
                         <Activity className="h-5 w-5" />
@@ -134,7 +153,7 @@ export function LandingNavbar() {
                     </Sheet>
                 </div>
 
-            </div>
-        </nav >
+            </motion.div>
+        </motion.nav >
     );
 }
