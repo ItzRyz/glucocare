@@ -1,0 +1,6 @@
+.next
+node_modules
+.venv
+api/.venv
+py_service/.venv
+*.log
