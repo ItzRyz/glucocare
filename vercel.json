@@ -1,14 +1,15 @@
 {
-  "functions": {
-    "api/**/*.py": {
+  "experimentalServices": {
+    "frontend": {
+      "entrypoint": ".",
+      "framework": "nextjs",
+      "routePrefix": "/"
+    },
+    "backend": {
+      "entrypoint": "py_service/index.py",
+      "routePrefix": "/api/flask",
       "maxDuration": 30,
       "memory": 1024
     }
-  },
-  "rewrites": [
-    {
-      "source": "/api/flask/(.*)",
-      "destination": "/api/index.py"
-    }
-  ]
+  }
 }
