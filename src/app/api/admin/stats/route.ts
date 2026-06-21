@@ -1,9 +1,9 @@
 import prisma from '@/lib/prisma';
 import { sendSuccess, sendError } from '@/lib/api-response';
 import { getOrgPermissions } from '@/lib/rbac';
-import { getFlaskBaseUrl } from '@/lib/flask-url';
+import { predict } from '@/lib/ml-model';
 
-export async function GET(request: Request) {
+export async function GET() {
     try {
         const { orgRole } = await getOrgPermissions();
         if (!orgRole) return sendError('Unauthorized', 401, 'UNAUTHORIZED');
@@ -35,23 +35,19 @@ export async function GET(request: Request) {
         });
         const statusMap = Object.fromEntries(statuses.map((s) => [s.id, s.name]));
 
+        // ML model runs in-process (TypeScript) — always available
         let mlService: { status: string; service?: string } = { status: 'unavailable' };
         try {
-            const headers: Record<string, string> = { 'Content-Type': 'application/json' };
-            const cookieHeader = request.headers.get('cookie');
-            if (cookieHeader) headers['Cookie'] = cookieHeader;
-            if (process.env.VERCEL_AUTOMATION_BYPASS_SECRET) {
-                headers['x-vercel-protection-bypass'] = process.env.VERCEL_AUTOMATION_BYPASS_SECRET;
-            }
-
-            const res = await fetch(`${getFlaskBaseUrl()}/health`, {
-                method: 'GET',
-                headers,
-                signal: AbortSignal.timeout(2000),
+            // Warm-up call: run a tiny dummy prediction to confirm the model is loaded
+            predict('randomforest', {
+                Age: '45', Gender: 'Male',
+                Polyuria: 'No', Polydipsia: 'No', 'sudden weight loss': 'No',
+                weakness: 'No', Polyphagia: 'No', 'Genital thrush': 'No',
+                'visual blurring': 'No', Itching: 'No', Irritability: 'No',
+                'delayed healing': 'No', 'partial paresis': 'No',
+                'muscle stiffness': 'No', Alopecia: 'No', Obesity: 'No',
             });
-            if (res.ok) {
-                mlService = await res.json();
-            }
+            mlService = { status: 'ok', service: 'glucocare-ml' };
         } catch {
             mlService = { status: 'unavailable' };
         }
