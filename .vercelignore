@@ -1,6 +1,7 @@
 .next
 node_modules
-.venv
+**/.venv
+**/.venv/**
 api/.venv
-py_service/.venv
+api/.venv/**
 *.log
