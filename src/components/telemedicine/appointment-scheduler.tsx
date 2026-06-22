@@ -127,7 +127,7 @@ export default function AppointmentScheduler() {
                   <div
                     key={doc.id}
                     onClick={() => setSelectedDoctor(doc.id)}
-                    className={`cursor-pointer rounded-xl border p-4 flex gap-4 items-start transition-all
+                    className={`cursor-pointer rounded-xl border p-4 flex gap-4 items-start transition-all w-full
                       ${selectedDoctor === doc.id
                         ? "border-primary bg-primary/5 ring-1 ring-primary"
                         : "border-input hover:border-primary/50 hover:bg-muted/30"}`}

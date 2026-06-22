@@ -3,7 +3,7 @@ import ChatPanel from "@/components/telemedicine/chat-panel"
 
 export default function TelemedicinePage() {
   return (
-    <div className="container mx-auto px-4 sm:px-8 py-8 max-w-4xl space-y-8">
+    <div className="container mx-auto px-4 sm:px-8 py-8 max-w-7xl space-y-8">
       <div>
         <h1 className="text-3xl font-bold tracking-tight">Telemedicine</h1>
         <p className="text-muted-foreground mt-1">
